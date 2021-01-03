@@ -83,7 +83,7 @@ void unblockSignal(sigset_t blockSet) {
 int handleConnection() {
     int printableChars, netPrintableChars, netBufferSize, bufferSize;
     char *buffer;
-    if ((read(connFd, &netBufferSize, sizeof(int)))!=0) {
+    if ((read(connFd, &netBufferSize, sizeof(int))) != 0) {
         return 1;
     }
     bufferSize = ntohl(netBufferSize);
@@ -97,7 +97,6 @@ int handleConnection() {
 }
 
 
-
 int runServer(int16_t port) {
     sigset_t blockSet;
     struct sockaddr_in serv_addr;
@@ -105,6 +104,11 @@ int runServer(int16_t port) {
     socklen_t addrsize = sizeof(struct sockaddr_in);
 
     listenFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int)) < 0) {
+        fprintf(stderr, "setsockopt(SO_REUSEADDR) failed\n");
+        return 1;
+    }
+
     memset(&serv_addr, 0, addrsize);
 
     serv_addr.sin_family = AF_INET;
@@ -112,19 +116,19 @@ int runServer(int16_t port) {
     serv_addr.sin_port = htons(port);
 
     if (bind(listenFd, (struct sockaddr *) &serv_addr, addrsize) != 0) {
-        printf("Error : Bind Failed. %s \n", strerror(errno));
+        fprintf(stderr, "Error : Bind Failed. %s \n", strerror(errno));
         return 1;
     }
 
     if (listen(listenFd, QUEUE_SIZE) != 0) {
-        printf("Error : Listen Failed. %s \n", strerror(errno));
+        fprintf(stderr, "Error : Listen Failed. %s \n", strerror(errno));
         return 1;
     }
 
     while (!isDone) {
         connFd = accept(listenFd, (struct sockaddr *) &peer_addr, &addrsize);
         if (connFd < 0 && !isDone) {
-            printf("Error : Accept Failed. %s \n", strerror(errno));
+            fprintf(stderr, "Error : Accept Failed. %s \n", strerror(errno));
             return 1;
         }
         blockSignal(&blockSet);
@@ -141,7 +145,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "wrong number of arguments give\n");
         exit(1);
     }
-
     int16_t port;
     if ((port = parse_port(argv[1])) <= 0) {
         fprintf(stderr, "port must be a positive number\n");
