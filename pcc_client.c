@@ -109,6 +109,7 @@ int main(int argc, char *argv[]) {
     fread(fileContent, sizeof(char), fileSize, file);
 
     if ((writeFile(port, ipAddress, fileSize, fileContent)) == FAIL) {
+        fprintf(stderr, "failed writing file to socket\n");
         exit(1);
     }
 
