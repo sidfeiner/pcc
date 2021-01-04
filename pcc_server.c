@@ -11,6 +11,7 @@
 
 #define PCC_SIZE (126 - 32 + 1)
 #define QUEUE_SIZE 10
+#define FAIL (-1)
 
 int pccTotal[PCC_SIZE]; // counter for each printable char
 int listenFd = -1;
@@ -80,18 +81,32 @@ void unblockSignal(sigset_t blockSet) {
     sigprocmask(SIG_UNBLOCK, &blockSet, NULL);  // Now pid has been persisted, handle SIGINT if needed
 }
 
+int isSocketError() {
+    return errno == ETIMEDOUT || errno == ECONNRESET || errno == EPIPE;
+}
+
 int handleConnection() {
     int printableChars, netPrintableChars, netBufferSize, bufferSize;
     char *buffer;
-    if ((read(connFd, &netBufferSize, sizeof(int))) != 0) {
-        return 1;
+    read(connFd, &netBufferSize, sizeof(int));
+    if (isSocketError()) {
+        fprintf(stderr, "failed reading file size from socket\n");
+        return FAIL;
     }
     bufferSize = ntohl(netBufferSize);
     buffer = malloc(sizeof(char) * bufferSize);
     read(connFd, buffer, bufferSize);
+    if (isSocketError()) {
+        fprintf(stderr, "failed reading file from socket\n");
+        return FAIL;
+    }
     printableChars = incPrintableChars(buffer, bufferSize);
     netPrintableChars = htonl(printableChars);
     write(connFd, &netPrintableChars, sizeof(int));
+    if (isSocketError()) {
+        fprintf(stderr, "failed writing printable chars to socket\n");
+        return FAIL;
+    }
     free(buffer);
     return 0;
 }
@@ -132,8 +147,10 @@ int runServer(int16_t port) {
             return 1;
         }
         blockSignal(&blockSet);
+        printf("handling connection\n");
         handleConnection();
         close(connFd);
+        printf("closed connection\n");
         connFd = -1;
         unblockSignal(blockSet);
     }
