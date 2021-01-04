@@ -44,7 +44,7 @@ int writeFile(int16_t port, char *ipAddress, int fileSize, char *fileContent) {
 
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        printf("\n Error : Could not create socket \n");
+        fprintf(stderr, "Error : Could not create socket \n");
         exit(1);
     }
 
@@ -79,7 +79,6 @@ int writeFile(int16_t port, char *ipAddress, int fileSize, char *fileContent) {
         close(sockfd);
         return FAIL;
     }
-    printf("# of printable characters: %u\n", ntohl(netPrintableCharsAmount));
     close(sockfd);
 
     return 0;
@@ -104,12 +103,10 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    printf("reading file...\n");
     char *fileContent;
     fileSize = getFileSize(file);
     fileContent = malloc(sizeof(char) * fileSize);
     fread(fileContent, sizeof(char), fileSize, file);
-    printf("successfully read file with %lu bytes\n", fileSize);
 
     if ((writeFile(port, ipAddress, fileSize, fileContent)) == FAIL) {
         exit(1);

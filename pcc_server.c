@@ -147,10 +147,8 @@ int runServer(int16_t port) {
             return 1;
         }
         blockSignal(&blockSet);
-        printf("handling connection\n");
         handleConnection();
         close(connFd);
-        printf("closed connection\n");
         connFd = -1;
         unblockSignal(blockSet);
     }
