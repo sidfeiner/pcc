@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     char *ipAddress = argv[1];
-    int16_t port;
+    uint16_t port;
     size_t fileSize;
     if ((port = parse_port(argv[2])) <= 0) {
         fprintf(stderr, "port must be a positive number\n");
