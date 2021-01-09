@@ -79,6 +79,7 @@ int writeFile(int16_t port, char *ipAddress, int fileSize, char *fileContent) {
         close(sockfd);
         return FAIL;
     }
+    printf("# of printable characters: %u\n", ntohl(netPrintableCharsAmount));
     close(sockfd);
 
     return 0;
