@@ -37,6 +37,15 @@ int isSocketError() {
     return errno == ETIMEDOUT || errno == ECONNRESET || errno == EPIPE;
 }
 
+void readFromSocket(int fd, size_t expectedSize, void *buffer) {
+    size_t curRead, readAmt = 0;
+    while (readAmt < expectedSize) {
+        curRead = read(fd, buffer, expectedSize);
+        expectedSize -= curRead;
+        buffer += curRead;
+    }
+}
+
 int writeFile(int16_t port, char *ipAddress, int fileSize, char *fileContent) {
     int netPrintableCharsAmount;
     int sockfd = -1;
@@ -73,7 +82,7 @@ int writeFile(int16_t port, char *ipAddress, int fileSize, char *fileContent) {
         close(sockfd);
         return FAIL;
     }
-    read(sockfd, &netPrintableCharsAmount, sizeof(int));
+    readFromSocket(sockfd, sizeof(int), &netPrintableCharsAmount);
     if (isSocketError()) {
         fprintf(stderr, "failed reading printable chars amount from socket: %s\n", strerror(errno));
         close(sockfd);

@@ -48,8 +48,18 @@ int incPrintableChars(char *chars, int size) {
     return cnt;
 }
 
+void readFromSocket(int fd, void *buffer, size_t expectedSize) {
+    size_t curRead, readAmt = 0;
+    while (readAmt < expectedSize) {
+        curRead = read(fd, buffer, expectedSize);
+        expectedSize -= curRead;
+        buffer += curRead;
+    }
+}
+
 void shutdown_server(int sig) {
     int *tmpChar, *limit, index;
+    isDone = 1;
     if (connFd > -1) {
         close(connFd);
     }
@@ -60,7 +70,6 @@ void shutdown_server(int sig) {
     for (index = 0, tmpChar = pccTotal; tmpChar < limit; tmpChar++, index++) {
         printf("char '%c' : %u times\n", index + 32, *tmpChar);
     }
-    isDone = 1;
 }
 
 int initSigintHandler() {
@@ -88,14 +97,16 @@ int isSocketError() {
 int handleConnection() {
     int printableChars, netPrintableChars, netBufferSize, bufferSize;
     char *buffer;
-    read(connFd, &netBufferSize, sizeof(int));
+    readFromSocket(connFd, &netBufferSize, sizeof(int));
+    printf("done reading size\n");
     if (isSocketError()) {
         fprintf(stderr, "failed reading file size from socket\n");
         return FAIL;
     }
     bufferSize = ntohl(netBufferSize);
     buffer = malloc(sizeof(char) * bufferSize);
-    read(connFd, buffer, bufferSize);
+    readFromSocket(connFd, buffer, bufferSize);
+    printf("done reading file\n");
     if (isSocketError()) {
         fprintf(stderr, "failed reading file from socket\n");
         return FAIL;
@@ -142,7 +153,9 @@ int runServer(int16_t port) {
 
     while (!isDone) {
         connFd = accept(listenFd, (struct sockaddr *) &peer_addr, &addrsize);
-        if (connFd < 0 && !isDone) {
+        if (isDone) {
+            return 0;
+        } else if (connFd < 0) {
             fprintf(stderr, "Error : Accept Failed. %s \n", strerror(errno));
             return 1;
         }
